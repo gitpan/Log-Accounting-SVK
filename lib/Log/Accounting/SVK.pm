@@ -8,7 +8,7 @@ use SVK::XD;
 use SVK::Util qw(get_anchor catfile catdir);
 use SVK::Command::Log;
 use YAML;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 field 'repository';
 field start_rev => 1;
@@ -20,16 +20,9 @@ field '_algo';
 
 sub process {
   $self->repository || die "Must set repository\n";
-  my $acc = Algorithm::Accounting->new(fields => [qw/author/]);
+  my $acc = Algorithm::Accounting->new(fields => [qw/author path month/]);
 
   $self->_algo($acc);
-
-  my $append = sub {
-    my ($revision, $root, $paths, $props, $sep, $output, $indent, $print_rev) = @_;
-    my ($author, $date) = @{$props}{qw/svn:author svn:date/};
-    unless($self->quiet) { print STDERR "$revision\r" if($revision); }
-    $acc->append_data([[ $author ]]) if($author);
-  };
 
   $ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
   my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
@@ -40,7 +33,17 @@ sub process {
   $xd->load;
   my $cmd = SVK::Command::Log->new($xd);
   my $target = $cmd->parse_arg($self->repository);
-  SVK::Command::Log::_get_logs($target->root,-1,$target->{path},$target->{repos}->fs->youngest_rev,0,0,0,$append) ;
+
+  my $append = sub {
+    my ($revision, $root, $paths, $props, $sep, $output, $indent, $print_rev) = @_;
+    my ($author, $date) = @{$props}{qw/svn:author svn:date/};
+    unless($self->quiet) {print STDERR "$revision\t\r" if($revision);}
+    my $_paths = $self->_extract_path($target,$paths);
+    my $_year_month  = $self->_extract_date($date);
+    $acc->append_data([[ $author, $_paths , $_year_month ]]) if($author);
+  };
+
+  SVK::Command::Log::_get_logs($target->root($xd),-1,$target->{path},$target->{repos}->fs->youngest_rev,0,1,0,$append) ;
   $self->_algo($acc);
   return $self;
 }
@@ -54,6 +57,30 @@ sub result {
   my $algo = $self->_algo || die("Can't return result without algo obj");
   $algo->result(@_);
 }
+
+sub _extract_date {
+# 2004-04-10T09:51:33.621682Z
+  my $date = shift;
+  $date =~ s/-\d+T.+$//;
+  return $date;
+}
+
+# extract top-level directories into a arrayref
+sub _extract_path {
+  my ($target,$paths) = @_;
+  return ['(DUMMY)'] unless $paths;
+  my %h;
+  my $prefix = $target->{path};
+  $prefix = '' if($prefix eq '/');
+  for(keys %$paths) {
+    s/^${prefix}//;
+    my @k = split(/\//,$_);
+    next unless $k[1];
+    $h{ "$k[1]" } = 1;
+  }
+  return [keys %h];
+}
+
 
 1;
 

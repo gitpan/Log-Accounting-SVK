@@ -7,6 +7,7 @@ license         ('perl');
 version_from    ('lib/Log/Accounting/SVK.pm');
 requires        ('Algorithm::Accounting');
 requires        ('SVK');
+requires        ('Spiffy');
 build_requires  ('Test::More');
 
 install_script  ('bin/svk-accounting.pl');

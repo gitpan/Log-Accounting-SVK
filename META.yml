@@ -1,5 +1,5 @@
 name: Log-Accounting-SVK
-version: 0.02
+version: 0.03
 abstract: Accounting SVK repository
 author: Kang-min Liu <gugod@gugod.org>
 license: perl
@@ -9,6 +9,7 @@ build_requires:
 requires:
   Algorithm::Accounting: 0
   SVK: 0
+  Spiffy: 0
 no_index:
   directory:
     - inc
