@@ -8,7 +8,7 @@ use SVK::XD;
 use SVK::Util qw(get_anchor catfile catdir);
 use SVK::Command::Log;
 use YAML;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 field 'repository';
 field start_rev => 1;
