@@ -1,26 +1,32 @@
 package Log::Accounting::SVK;
-use strict;
-use warnings;
-use Spiffy '-Base';
+use Spiffy -Base;
 use Algorithm::Accounting;
 use SVK;
 use SVK::XD;
 use SVK::Util qw(get_anchor catfile catdir);
 use SVK::Command::Log;
-use YAML;
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 field 'repository';
 field start_rev => 1;
 field end_rev   => -1;
 
-field 'quiet';
+field quiet => 0;
+field image => 0;
 
 field '_algo';
 
 sub process {
   $self->repository || die "Must set repository\n";
-  my $acc = Algorithm::Accounting->new(fields => [qw/author path month/]);
+  my $acc = Algorithm::Accounting->new
+    ( fields       => [qw/author path month/],
+      field_groups =>
+      [
+       [qw(author path)],
+       [qw(author month)],
+       [qw(author month path)]
+      ]
+    );
 
   $self->_algo($acc);
 
@@ -43,13 +49,15 @@ sub process {
     $acc->append_data([[ $author, $_paths , $_year_month ]]) if($author);
   };
 
-  SVK::Command::Log::_get_logs($target->root($xd),-1,$target->{path},$target->{repos}->fs->youngest_rev,0,1,0,$append) ;
+  SVK::Command::Log::_get_logs($target->root($xd),-1,$target->{path},0,$target->{repos}->fs->youngest_rev,1,0,$append) ;
   $self->_algo($acc);
   return $self;
 }
 
 sub report {
   my $algo = $self->_algo || die("Can't report without algo obj");
+  $algo->report_class('Algorithm::Accounting::Report::GDGraph')
+      if($self->image);
   $algo->report;
 }
 
@@ -81,42 +89,4 @@ sub _extract_path {
   return [keys %h];
 }
 
-
-1;
-
-__END__
-
-=head1 NAME
-
-  Log::Accounting::SVK - Accounting svn repository
-
-=head1 SYNOPSIS
-
-  my $acc = Log::Accounting::SVK->new(repository => 'svn://');
-  $acc->process->report;
-
-=head1 DESCRIPTION
-
-This module make use of L<Algorithm::Accounting> and L<SVK> to do
-simple accounting of any SVK repository. The installed C<svn-accounting.pl>
-script demostrate a simple use to this module, you may try:
-
-  svk-accounting.pl //
-
-This will display all the contributions of developers under repository
-'//'. You may also specify depotpath like '//trunk/svk'.
-
-So far it's quite simple and no big deal, different fields will
-be accounted in the future.
-
-=head1 COPYRIGHT
-
-Copyright 2004 by Kang-min Liu <gugod@gugod.org>.
-
-This program is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
-
-See <http://www.perl.com/perl/misc/Artistic.html>
-
-=cut
 

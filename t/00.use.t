@@ -3,6 +3,6 @@ use strict;
 use warnings;
 use Test::More tests => 2;
 
-use_ok('Log::Accounting::SVN');
-require_ok ('Log::Accounting::SVN');
+use_ok('Log::Accounting::SVK');
+require_ok ('Log::Accounting::SVK');
 
