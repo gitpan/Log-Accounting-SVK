@@ -5,7 +5,7 @@ use SVK;
 use SVK::XD;
 use SVK::Util qw(get_anchor catfile catdir);
 use SVK::Command::Log;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 field 'repository';
 field start_rev => 1;
@@ -13,22 +13,22 @@ field end_rev   => -1;
 
 field quiet => 0;
 field image => 0;
+field dir => 1;
 
-field '_algo';
+field algo => {},
+    -init => q{Algorithm::Accounting->new
+            ( fields       => [qw/author path month/],
+              field_groups =>
+                  [
+                      [qw(author path)],
+                      [qw(author month)],
+                      [qw(author month path)]
+                     ]
+                 );
+           };
 
 sub process {
   $self->repository || die "Must set repository\n";
-  my $acc = Algorithm::Accounting->new
-    ( fields       => [qw/author path month/],
-      field_groups =>
-      [
-       [qw(author path)],
-       [qw(author month)],
-       [qw(author month path)]
-      ]
-    );
-
-  $self->_algo($acc);
 
   $ENV{HOME} ||= catdir(@ENV{qw( HOMEDRIVE HOMEPATH )});
   my $svkpath = $ENV{SVKROOT} || catfile($ENV{HOME}, ".svk");
@@ -46,24 +46,27 @@ sub process {
     unless($self->quiet) {print STDERR "$revision\t\r" if($revision);}
     my $_paths = $self->_extract_path($target,$paths);
     my $_year_month  = $self->_extract_date($date);
-    $acc->append_data([[ $author, $_paths , $_year_month ]]) if($author);
+
+    $self->algo->append_data([[ $author, $_paths , $_year_month ]]) 
+        if($author && !($author eq 'svm'));
   };
 
   SVK::Command::Log::_get_logs($target->root($xd),-1,$target->{path},0,$target->{repos}->fs->youngest_rev,1,0,$append) ;
-  $self->_algo($acc);
   return $self;
 }
 
 sub report {
-  my $algo = $self->_algo || die("Can't report without algo obj");
-  $algo->report_class('Algorithm::Accounting::Report::GDGraph')
+  $self->algo->report_class('Algorithm::Accounting::Report::GDGraph')
       if($self->image);
-  $algo->report;
+  $self->algo->report;
 }
 
 sub result {
-  my $algo = $self->_algo || die("Can't return result without algo obj");
-  $algo->result(@_);
+  $self->algo->result(@_);
+}
+
+sub group_result {
+  $self->algo->group_result(@_);
 }
 
 sub _extract_date {
@@ -84,7 +87,12 @@ sub _extract_path {
     s/^${prefix}//;
     my @k = split(/\//,$_);
     next unless $k[1];
-    $h{ "$k[1]" } = 1;
+    my $dir = join('/',@k[0..$#k-1]);
+    if($self->dir) {
+        $h{ $dir } = 1;
+    } else {
+        $h{ "$k[1]" } = 1;
+    }
   }
   return [keys %h];
 }

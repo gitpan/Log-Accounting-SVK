@@ -11,7 +11,7 @@
 =head1 DESCRIPTION
 
 This module make use of L<Algorithm::Accounting> and L<SVK> to do
-simple accounting of any SVK repository. The installed C<svn-accounting.pl>
+simple accounting of any SVK repository. The installed C<svk-accounting.pl>
 script demostrate a simple use to this module, you may try:
 
   svk-accounting.pl //
@@ -19,12 +19,25 @@ script demostrate a simple use to this module, you may try:
 This will display all the contributions of developers under repository
 '//'. You may also specify depotpath like '//trunk/svk'.
 
+Or, you may generated developer social-network by C<svk-developer-graph.pl>
+command:
+
+  svk-developer-graph.pl //
+
+This would be more informative on mirrored-path, like
+
+  svk-developer-graph //mirror/svk
+
 So far it's quite simple and no big deal, different fields will
 be accounted in the future.
 
+=head1 SEE ALSO
+
+svk-accounting.pl, svk-developer-graph.pl
+
 =head1 COPYRIGHT
 
-Copyright 2004 by Kang-min Liu <gugod@gugod.org>.
+Copyright 2004,2005 by Kang-min Liu <gugod@gugod.org>.
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

@@ -10,6 +10,7 @@ Log::Accounting::SVK->new(
     repository => $repo,
     quiet => $opts{q},
     image => $opts{i},
+    dir => !$opts{p},
    )->process->report;
 
 __END__
